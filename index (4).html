@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Takvim</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #ffffff;
+      color: #111111;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    .container {
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      gap: 24px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    p.sub {
+      font-size: 15px;
+      color: #555555;
+      margin-bottom: 8px;
+    }
+
+    button {
+      appearance: none;
+      -webkit-appearance: none;
+      border: none;
+      cursor: pointer;
+      background: #1a73e8;
+      color: #ffffff;
+      font-size: 20px;
+      font-weight: 600;
+      padding: 20px 34px;
+      border-radius: 14px;
+      box-shadow: 0 4px 12px rgba(26, 115, 232, 0.3);
+      transition: background 0.2s, transform 0.1s;
+      max-width: 90vw;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    button:disabled {
+      background: #9db6d8;
+      cursor: default;
+    }
+
+    #message {
+      min-height: 24px;
+      font-size: 16px;
+      font-weight: 500;
+      color: #1a73e8;
+    }
+
+    #message.error {
+      color: #c5221f;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📅 Ayın Takvimi</h1>
+    <p class="sub">Aşağıdaki butona basın, bu ayın takvimi açılacaktır.</p>
+    <button id="btn">📅 BU AYIN TAKVİMİNİ ÇIKAR</button>
+    <div id="message"></div>
+  </div>
+
+  <script>
+    // Türkçe ay adı → takvim.ru'nun URL'de kullandığı form
+    const MONTHS = [
+      "ocak",   // 0
+      "subat",  // 1
+      "mart",   // 2
+      "nisan",  // 3
+      "mayis",  // 4
+      "haziran",// 5
+      "temmuz", // 6
+      "agustos",// 7
+      "eylul",  // 8
+      "ekim",   // 9
+      "kasim",  // 10
+      "aralik"  // 11
+    ];
+
+    const button = document.getElementById("btn");
+    const messageEl = document.getElementById("message");
+
+    button.addEventListener("click", async () => {
+      const now = new Date();
+      const year = now.getFullYear();        // örn. 2026
+      const month = MONTHS[now.getMonth()]; // örn. "eylul"
+
+      button.disabled = true;
+      show("Takvim hazırlanıyor…", false);
+
+      try {
+        // API'ye istek gönder (relative path — Vercel'de /api/calendar)
+        const res = await fetch("/api/calendar?month=" + encodeURIComponent(month) + "&year=" + year);
+
+        if (!res.ok) {
+          throw new Error("notfound");
+        }
+
+        // API, PDF'i doğrudan application/pdf olarak döndürür.
+        // Blob'a çevirip yeni sekmede (Safari'de de çalışır) açıyoruz.
+        const blob = await res.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        window.open(blobUrl, "_blank");
+      } catch (err) {
+        show("Bu ay için takvim.ru üzerinde takvim bulunamadı.", true);
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    function show(text, isError) {
+      messageEl.textContent = text;
+      messageEl.classList.toggle("error", isError);
+    }
+  </script>
+</body>
+</html>
